@@ -1,0 +1,100 @@
+@extends('layouts.app')
+
+@section('content')
+<style>
+    .container {
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+        font-family: Arial, sans-serif;
+        text-align: center;
+    }
+
+    .header {
+        background-color: #28a745;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+    }
+
+    .success-icon {
+        font-size: 60px;
+        color: #28a745;
+        margin: 20px 0;
+        animation: bounce 1s ease infinite;
+    }
+
+    @keyframes bounce {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    .info-box {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        padding: 10px;
+        margin: 20px 0;
+        border: 1px solid #bee5eb;
+        border-radius: 4px;
+    }
+
+    .btn {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 20px;
+        text-decoration: none;
+        display: inline-block;
+        border-radius: 4px;
+        margin-top: 20px;
+    }
+
+    .btn:hover {
+        background-color: #0056b3;
+    }
+
+    .error-box {
+        background-color: #f8d7da;
+        color: #721c24;
+        padding: 10px;
+        border: 1px solid #f5c6cb;
+        border-radius: 4px;
+        margin-top: 20px;
+        text-align: left;
+    }
+
+    ul {
+        padding-left: 20px;
+    }
+</style>
+
+<div class="container">
+    <div class="header">Passport Updated</div>
+
+    <div class="success-icon">&#10004;</div>
+
+    <h3>Passport Updated Successfully!</h3>
+    <p>Your passport details have been successfully updated.</p>
+
+    <div class="info-box">
+        Kindly go back to the app to continue.
+    </div>
+
+    @if ($errors->any())
+        <div class="error-box">
+            <strong>Error(s):</strong>
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <a href="#" onclick="window.close(); return false;" class="btn">Return to App</a>
+</div>
+@endsection

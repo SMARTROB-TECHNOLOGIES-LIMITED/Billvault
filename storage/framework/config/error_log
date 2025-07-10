@@ -1,0 +1,8 @@
+[05-Sep-2024 11:39:58 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/fineeiif/api.paypointapp.africa/config/app.php:19
+Stack trace:
+#0 {main}
+  thrown in /home/fineeiif/api.paypointapp.africa/config/app.php on line 19
+[14-Feb-2025 21:06:27 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/billfvnv/staging.billvault.app/config/database.php:18
+Stack trace:
+#0 {main}
+  thrown in /home/billfvnv/staging.billvault.app/config/database.php on line 18

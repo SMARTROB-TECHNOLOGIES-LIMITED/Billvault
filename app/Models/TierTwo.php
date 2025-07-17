@@ -10,9 +10,9 @@ class TierTwo extends Model
     use HasFactory;
 
     protected $table = 'tier_twos';
-
-    protected $fillable = ['user_id', 'date_of_birth', 'bvn', 'id_front', 'id_back', 'status', 'nin', 'verification_image', 'selfie_match', 'selfie_confidence','nationality', 'selfie', 'id_type'];
-
+    
+    protected $fillable = ['user_id', 'date_of_birth', 'bvn', 'id_front', 'id_back', 'status'];
+    
     public function user()
     {
         return $this->belongsTo(User::class);

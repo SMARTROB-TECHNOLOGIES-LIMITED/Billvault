@@ -177,7 +177,7 @@ class Helpers
         return json_decode($response->body(), true);
     }
     
-    public static function nombaTransfer ($bankCode, $account_number, $amount, $narration, $accountName){
+    public static function nombaTransfer ($bankCode, $account_number, $amount, $narration, $accountName, $ref){
         $accountId = getSettings('nomba_default','accountId');
         $get_access_token = self::refreshNombaToken();
         if ($get_access_token['code'] != 00) {
@@ -200,7 +200,7 @@ class Helpers
             "accountNumber" => $account_number,
             "accountName" => $accountName,
             "bankCode" => $bankCode,
-            "merchantTxRef" => 'Trans-Ref-' . Str::upper(Str::random(10)) . '-' . time(),
+            "merchantTxRef" => $ref,
             "senderName" => Auth::user()->surname." ".Auth::user()->first_name,
             "narration" => $narration,
         ];

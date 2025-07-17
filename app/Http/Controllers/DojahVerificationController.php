@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Api\Utility;
 use App\Http\Requests\NINRequest;
+use App\Http\Requests\ThierdTierVerifcationRequest;
+use App\Models\TierThree;
 use App\Models\TierTwo;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -38,13 +39,13 @@ class DojahVerificationController extends Controller
             ]);
 
             if (!$response->successful()) {
-                return Utility::outputData(false, 'BVN verification failed',  $response->json(), 400);
+                return self::outputData(false, 'BVN verification failed',  $response->json(), 400);
             }
 
             $bvnData = $response->json();
             $entity = $bvnData['entity'] ?? null;
             if (!$entity) {
-                return Utility::outputData(false, 'Invalid response from BVN service',  [], 400);
+                return self::outputData(false, 'Invalid response from BVN service',  [], 400);
             }
 
 
@@ -59,20 +60,20 @@ class DojahVerificationController extends Controller
 
             #  Create KYC record
             $this->updateTierTwoBVNDetails($user, [
-                    'bvn' => $bvn,
-                    'verification_image' => $imagePaths['verification_image'],
-                    'selfie' => $imagePaths['selfie_image'],
-                    'selfie_confidence' => $selfieVerification['confidence_value'],
-                    'selfie_match' => $selfieVerification['match'] ? 1 : 0,
-                    'nationality' => "Nigerian",
-                    "status" => true,
-                    "date_of_birth" => $entity['date_of_birth'],
+                'bvn' => $bvn,
+                'verification_image' => $imagePaths['verification_image'],
+                'selfie' => $imagePaths['selfie_image'],
+                'selfie_confidence' => $selfieVerification['confidence_value'],
+                'selfie_match' => $selfieVerification['match'] ? 1 : 0,
+                'nationality' => "Nigerian",
+                "status" => true,
+                "date_of_birth" => $entity['date_of_birth'],
             ]);
 
             #  Update user
             $this->updateUserAfterVerification($user, $entity, 'bvn');
 
-            return Utility::outputData(
+            return self::outputData(
                 true,
                 'BVN verification successful',
                 [
@@ -90,7 +91,7 @@ class DojahVerificationController extends Controller
 
         } catch (\Exception $e) {
             Log::error('BVN Verification Error: ' . $e->getMessage());
-            return Utility::outputData(false, 'An error occurred during BVN verification', ['error' =>  $this->getExceptionDetails($e)],
+            return self::outputData(false, 'An error occurred during BVN verification', ['error' =>  $this->getExceptionDetails($e)],
                 500
             );
 
@@ -223,7 +224,7 @@ class DojahVerificationController extends Controller
     {
         $confidenceValue = $selfieVerification['confidence_value'] ?? 0;
 
-        return Utility::outputData(
+        return self::outputData(
             false,
             'Selfie verification failed - face does not match BVN photo',
             [
@@ -275,7 +276,7 @@ class DojahVerificationController extends Controller
             'level_two_kyc_status' => 1,
             'dob' => $entity['date_of_birth'],
             'account_level' => 2,
-             'bvn' => $verificationField ?? null,
+            'bvn' => $verificationField ?? null,
             'is_account_restricted' => 0,
         ]);
     }
@@ -325,7 +326,7 @@ class DojahVerificationController extends Controller
             $response = $this->callDojahApi('/api/v1/kyc/nin/verify', $payload);
 
             if (!$response->successful()) {
-                return Utility::outputData(false, 'NIN verification failed', $response->json(), 400);
+                return self::outputData(false, 'NIN verification failed', $response->json(), 400);
 
             }
 
@@ -333,7 +334,7 @@ class DojahVerificationController extends Controller
             $entity = $ninData['entity'] ?? null;
 
             if (!$entity) {
-                return  Utility::outputData(false, 'Invalid response from NIN service', null, 400 );
+                return  self::outputData(false, 'Invalid response from NIN service', null, 400 );
             }
 
             #  Validate selfie verification
@@ -360,12 +361,7 @@ class DojahVerificationController extends Controller
             #  Update user
             $this->updateUserAfterVerification($user, $entity, 'nin');
 
-
-
-
-         //   $user->notify(new TierTwoUpgradeNotifcation($user));
-
-            return Utility::outputData(
+            return self::outputData(
                 true,
                 'NIN verification with selfie successful',
                 [
@@ -386,7 +382,7 @@ class DojahVerificationController extends Controller
 
         } catch (\Exception $e) {
             Log::error('NIN Verification Error: ' . $e->getMessage());
-            return Utility::outputData(false, 'An error occurred during NIN verification', [$this->getExceptionDetails($e)], 500);
+            return self::outputData(false, 'An error occurred during NIN verification', [$this->getExceptionDetails($e)], 500);
 
         }
     }
@@ -410,7 +406,7 @@ class DojahVerificationController extends Controller
     }
 
 
-    public function verifyDriverLicense(GlobalRequest $request): JsonResponse
+    public function verifyDriverLicense(ThierdTierVerifcationRequest $request): JsonResponse
     {
         $validated = $request->validated();
         $license_number = $validated['license_number'] ?? null;
@@ -425,14 +421,14 @@ class DojahVerificationController extends Controller
             $response = $this->callDojahApi('/api/v1/kyc/dl', $payload, "GET");
 
             if (!$response->successful()) {
-                return Utility::outputData(false, 'Driver License verification failed', $response->json(), 400);
+                return self::outputData(false, 'Driver License verification failed', $response->json(), 400);
             }
 
             $dlData = $response->json();
             $entity = $dlData['entity'] ?? null;
 
             if (!$entity) {
-                return Utility::outputData(false, 'Invalid response from provider, try again later', null, 400);
+                return self::outputData(false, 'Invalid response from provider, try again later', null, 400);
             }
 
             # Create or update KYC record
@@ -445,37 +441,52 @@ class DojahVerificationController extends Controller
                 'dl_stateOfIssue' => $entity['stateOfIssue'] ?? null,
             ]);
 
+            $this->updateUserAfterDlVerification($user,$entity);
 
 
-            $user->notify(new TierThreeUpgradeNotifcation($user));
-
-            return Utility::outputData(true, 'Driver license verification successful', [], 200);
+            return self::outputData(true, 'Driver license verification successful', [], 200);
 
         } catch (\Exception $e) {
             Log::error('DL Verification Error: ' . $e->getMessage());
-            return Utility::outputData(false, 'An error occurred during verification', [$this->getExceptionDetails($e)], 500);
+            return self::outputData(false, 'An error occurred during verification', [$this->getExceptionDetails($e)], 500);
         }
     }
 
 
-    private function updateDriverLicenseRecords($user, array $additionalData): void
+    private function updateDriverLicenseRecords(User $user, array $additionalData): void
     {
-        $kycData = array_merge([
-            'user_id' => $user->id,
-            'tier' => 'tier_3',
-            'status' => 'approved',
-        ], $additionalData);
+        $additionalData['id_type'] = 'd';
+        $additionalData['status'] = true;
+
+        TierThree::updateOrCreate(
+            ['user_id' => $user->id],
+            $additionalData
+        );
+    }
+
+    private function updateUserAfterDlVerification($user, array $entity): void
+    {
 
         $user->update([
-            'account_level' => 'tier_3',
+            'status' => 1,
+            'level_three_kyc_status' => 1,
+            'dob' => $entity['date_of_birth'],
+            'account_level' => 3,
+            'is_account_restricted' => 0,
         ]);
-
-        KYC::updateOrCreate(
-            ['user_id' => $user->id],
-            $kycData
-        );
     }
 
 
 
+    public static function outputData($boolean, $message, $data, $statusCode): JsonResponse
+    {
+        return response()->json([
+            'status' => $boolean,
+            'message' => $message,
+            'data' => $data,
+            'status_code' => $statusCode
+        ], $statusCode);
+    }
+
 }
+

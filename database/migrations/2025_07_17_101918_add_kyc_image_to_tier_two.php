@@ -19,6 +19,9 @@ return new class extends Migration
             $table->string('selfie_confidence')->after('selfie_match')->nullable();
             $table->string('nationality')->after('selfie_confidence')->nullable();
         });
+
+
+
     }
 
     /**

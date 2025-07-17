@@ -408,8 +408,9 @@ class DojahVerificationController extends Controller
 
     public function verifyDriverLicense(ThierdTierVerifcationRequest $request): JsonResponse
     {
-        $validated = $request->validated();
+        $validated = $request->license_number;
         $license_number = $validated['license_number'] ?? null;
+        $user = Auth::user();
 
         try {
             # Prepare query parameters
@@ -431,14 +432,16 @@ class DojahVerificationController extends Controller
                 return self::outputData(false, 'Invalid response from provider, try again later', null, 400);
             }
 
+            $imagePaths = $this->saveKycImages($user->id, $entity['photo'], $entity['photo'] ?? null, 'driver_license');
+
             # Create or update KYC record
-            $user = Auth::user();
             $this->updateDriverLicenseRecords($user, [
                 'dl_uuid' => $entity['uuid'] ?? null,
                 'dl_licenseNo' => $entity['licenseNo'] ?? null,
                 'dl_issuedDate' => $entity['issuedDate'] ?? null,
                 'dl_expiryDate' => $entity['expiryDate'] ?? null,
                 'dl_stateOfIssue' => $entity['stateOfIssue'] ?? null,
+                'verification_image' => $imagePaths['selfie_image']
             ]);
 
             $this->updateUserAfterDlVerification($user,$entity);
@@ -455,7 +458,6 @@ class DojahVerificationController extends Controller
 
     private function updateDriverLicenseRecords(User $user, array $additionalData): void
     {
-        $additionalData['id_type'] = 'd';
         $additionalData['status'] = true;
 
         TierThree::updateOrCreate(
@@ -470,7 +472,6 @@ class DojahVerificationController extends Controller
         $user->update([
             'status' => 1,
             'level_three_kyc_status' => 1,
-            'dob' => $entity['date_of_birth'],
             'account_level' => 3,
             'is_account_restricted' => 0,
         ]);

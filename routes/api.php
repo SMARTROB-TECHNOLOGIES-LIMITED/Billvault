@@ -251,5 +251,4 @@ Route::prefix('kyc')->middleware('auth:sanctum')->group(function () {
     Route::post('/verify-bvn', [DojahVerificationController::class, 'verifyBvn']);
     Route::post('/verify-nin', [DojahVerificationController::class, 'verifyNin']);
     Route::post('/verify-dl', [DojahVerificationController::class, 'verifyDriverLicense']);
-    Route::get('/tiers-list', [DojahVerificationController::class, 'getAllTiers']);
 });

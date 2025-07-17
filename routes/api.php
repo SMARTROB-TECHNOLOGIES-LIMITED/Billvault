@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\SafeHaven;
 use App\Http\Controllers\Api\NombaController;
 use App\Http\Controllers\Api\ReloadlyGiftCard;
 use App\Http\Controllers\Api\WalletController;
+use App\Http\Controllers\DojahVerificationController;
 use App\Http\Controllers\MiscellaneousController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -38,17 +39,17 @@ Route::post('/vtpass/generate-request-id', [VtpassController::class, 'vtpass_gen
 
 
 Route::prefix('auth')->group(function () {
-    
-    
+
+
     Route::post('/user-details', [AuthController::class, 'getUserDetails']);
     Route::prefix('register')->group(function () {
         Route::post('/verification', [SafeHaven::class, 'newCustomerRegistration']);
         Route::post('/email-confirmation', [AuthController::class, 'emailConfirm']);
         Route::post('/email-otp', [AuthController::class, 'emailConfirmOtp']);
-        
+
         Route::post('/step-one', [SafeHaven::class, 'Registration']);
         Route::post('/create_nomba_account', [NombaController::class,'Registration']);
-        
+
 
         Route::middleware(['auth:sanctum','bancheck'])->group(function() {
             // Profile & Kyc Related
@@ -56,18 +57,18 @@ Route::prefix('auth')->group(function () {
             Route::post('/create_account', [ProfileController::class, 'createAccount']);
             Route::post('/set_transaction_pin', [ProfileController::class, 'setTransactionPin']);
             Route::post('/confirm_transaction_pin', [ProfileController::class, 'confirmTransactionPin']);
-            
-            
-            
+
+
+
             Route::post('/complete_and_confirm_transaction_pin', [ProfileController::class, 'completeSetUpAndconfirmTransactionPin']); // SafeHaven
             Route::post('/bvn_verification', [ProfileController::class, 'bvnVerification']);
             Route::post('/profile_level_2', [ProfileController::class, 'profileLevel2']);
             Route::post('/create_tier_two', [ProfileController::class, 'createTier2']);
             Route::post('/create_tier_three', [ProfileController::class, 'createTier3']);
-            
-            
+
+
             // Virtual Card Routes
-            
+
             Route::post('/create_virtual_card_account', [ProfileController::class, 'createVirtualCardAccount']);
             Route::post('/create_virtual_card', [ProfileController::class, 'createdVirtualCard']);
             Route::post('/fund_card', [ProfileController::class, 'fundCard']);
@@ -75,14 +76,14 @@ Route::prefix('auth')->group(function () {
             Route::post('/freeze', [ProfileController::class, 'freezeCard']);
             Route::get('/card_transactions', [ProfileController::class, 'cardTransactions']);
             Route::get('/card_details', [ProfileController::class, 'cardDetails']);
-            
+
         });
     });
     //Password Reset
     Route::middleware(['auth:sanctum','bancheck'])->post('/reset_password', [AuthController::class, 'resetPassword']);
-    
+
     //Transaction Pin Reset
-    
+
     Route::middleware(['auth:sanctum','bancheck'])->group(function () {
         Route::get('/test-user', function () {
             return 'User details';
@@ -116,8 +117,8 @@ Route::middleware(['auth:sanctum','bancheck'])->group(function() {
     Route::get('/level_two_status', [ProfileController::class, 'level_two_status']);
     Route::get('/level_three_status', [ProfileController::class, 'level_three_status']);
     Route::get('/card_charges', [ProfileController::class, 'cardCharges']);
-    Route::get('/transaction-summary', [WalletController::class, 'getUserTransactionSummary']); 
-    
+    Route::get('/transaction-summary', [WalletController::class, 'getUserTransactionSummary']);
+
     // Refeffal
     Route::get('/referral', [ProfileController::class, 'getUsersAndReferralCount']);
 
@@ -126,15 +127,15 @@ Route::middleware(['auth:sanctum','bancheck'])->group(function() {
     Route::middleware(['kyc'])->post('/purchase_airtime', [Utility::class, 'purchaseAirtime']);
     Route::get('/data_variation_list/{serviceId}', [Utility::class, 'dataVariationList']);
     Route::middleware(['kyc'])->post('/purchase_data', [Utility::class, 'purchaseData']);
-    
+
     Route::get('/get_tv_subscription_list', [Utility::class, 'getTvSubscriptionList']);
     Route::get('/tv_provider_variation_list/{serviceId}', [Utility::class, 'tvProviderVariationList']);
     Route::middleware(['kyc'])->post('/purchase_tv_subscription', [Utility::class,'purchaseTVSubscription']);
-    
+
     Route::get('/airtime-to-cash-networks', [Utility::class, 'getNetworkList']);
     Route::get('/airtime-to-cash-settings/{id}', [Utility::class, 'getNetworkSettings']);
     Route::post('/airtime-to-cash', [Utility::class, 'processAirtimeToCash']);
-    
+
     // Safe Haven APIS
     Route::get('/refresh_token', [SafeHaven::class,'refreshToken']);
     Route::post('/verify_bvn', [SafeHaven::class,'verifyBVN']);
@@ -143,21 +144,21 @@ Route::middleware(['auth:sanctum','bancheck'])->group(function() {
     Route::get('safe_haven_bank_list', [SafeHaven::class,'getBankList']);
     Route::post('/get_customer_name', [SafeHaven::class, 'getAccountDetails']);
     Route::post('/safehaven_initiate_transfer/{ref?}', [SafeHaven::class, 'safeHavenTransfer']);
-    
+
     // Nomba APIS
     Route::get('/refresh_nomba_token', [NombaController::class,'refreshToken']);
     Route::post('/create_only_nomba_account', [NombaController::class,'createNombaAccount']);
-    
+
     Route::get('/nomba_bank_list', [NombaController::class,'getBankList']);
     Route::post('/nomba_account_details', [NombaController::class,'getAccountDetails']);
     Route::post('/nomba_transfer', [NombaController::class, 'nombaTransfer']);
-    
+
     // Flight Booking APIS
     Route::get('/search_flight', [FlightBookingController::class,'searchFlights']);
     Route::post('/flight_final_price', [FlightBookingController::class,'getFlightFinalPrice']);
     Route::post('/book_flight', [FlightBookingController::class,'bookFlight']);
     Route::get('/airport-search', [FlightBookingController::class, 'searchAirportAndCity']);
-    
+
     // Reloadly
     Route::get('get_card_countries', [ReloadlyGiftCard::class,'getCardCountries']);
     Route::get('get_card_country/{iso}', [ReloadlyGiftCard::class,'getCardCountry']);
@@ -169,20 +170,20 @@ Route::middleware(['auth:sanctum','bancheck'])->group(function() {
     Route::get('get_fx_rate/{currency}/{amount}', [ReloadlyGiftCard::class,'getFXRate']);
     Route::post('/order_gift_card', [ReloadlyGiftCard::class, 'orderGiftCard']);
     Route::get('get_redeem_code/{tid}', [ReloadlyGiftCard::class,'getRedeemCode']);
-    
+
     // Sell GiftCard
-    
+
     Route::get('get_products', [ReloadlyGiftCard::class,'getProducts']);
     Route::get('get_products_countries/{pid}', [ReloadlyGiftCard::class,'getProductsCountries']);
     Route::post('calculate_rate', [ReloadlyGiftCard::class,'calculateRate']);
     Route::post('sell_gift_card', [ReloadlyGiftCard::class,'sellGiftCard']);
     Route::get('gift_card_transaction_history', [ReloadlyGiftCard::class,'transactionLog']);
-    
+
 
     Route::get('/get_electricity_list', [Utility::class, 'getElectricityList']);
     Route::middleware(['kyc'])->post('/verify_metre_number', [Utility::class,'verifyMetreNumber']);
     Route::middleware(['kyc'])->post('/verify_cable_tv_number', [Utility::class,'verifyCableTVNumber']);
-    
+
     Route::middleware(['kyc'])->post('/purchase_electricity', [Utility::class,'purchaseElectricity']);
     Route::get('/recent-transactions/{type}', [Utility::class,'getRecentTransactions']);
 
@@ -200,12 +201,12 @@ Route::middleware(['auth:sanctum','bancheck'])->group(function() {
     Route::get('/bank_list', [PaystackController::class, 'getBankList']);
     Route::middleware(['kyc'])->post('/resolve_account', [PaystackController::class,'getAccountDetails']);
     Route::middleware(['kyc'])->post('/initiate_transfer/{ref?}', [PaystackController::class,'initiateTransfer']);
-    
+
     // Educational API
     Route::get('/waec_services', [Utility::class, 'waecServices']);
     // Route::get('/waec_variations/{serviceId}', [Utility::class, 'weacVariation']);
     Route::post('/purchase_waec', [Utility::class,'purchaseWaec']);
-    
+
     Route::get('/education_variations/{serviceId}', [Utility::class, 'educationVariation']);
     Route::post('/verify_jamb_profile', [Utility::class,'verifyProfile']);
     Route::post('/purchase_jamb', [Utility::class,'purchaseJamb']);
@@ -219,7 +220,7 @@ Route::middleware(['auth:sanctum','bancheck'])->group(function() {
     Route::get('/beneficiaries/{type}', [MiscellaneousController::class, 'getBeneficiariesByType']);
     Route::post('/delete_beneficiaries/{id}', [MiscellaneousController::class, 'destroy']);
 
-    
+
     // New utility routes
     Route::get('/get_data_list', [Utility::class, 'getDataList']);
     Route::middleware(['kyc'])->post('/verify_smile_email', [Utility::class,'verifySmileEmail']);
@@ -229,12 +230,12 @@ Route::middleware(['auth:sanctum','bancheck'])->group(function() {
     Route::get('/international-airtime-variation-code/{operatorID}/{productID}', [Utility::class, 'internationalAirtimeVariationCode']);
     Route::middleware(['kyc'])->post('/purchase_international_airtime', [Utility::class, 'purchaseInternationalAirtime']);
     // Ends Here
-    
+
     // Betting Endpoints
-    
+
     Route::get('/betting-platforms', [Utility::class,'bettingPlatform']);
     Route::post('/verify-betting-id', [Utility::class,'verifyBettingID']);
-    Route::post('/fund-betting-account', [Utility::class,'fundBettingAccount']); 
+    Route::post('/fund-betting-account', [Utility::class,'fundBettingAccount']);
 
 });
 
@@ -243,3 +244,12 @@ Route::middleware(['auth:sanctum','bancheck'])->group(function() {
 Route::post('/confirmvtustatus', [Utility::class, 'confirmVTUStatus']);
 Route::get('/withdrawal-status', [ProfileController::class, 'withdrawStatus']);
 Route::post('/nombaWebhook', [WalletController::class,'nombaDepositWebhook']);
+
+
+Route::prefix('kyc')->middleware('auth:sanctum')->group(function () {
+    Route::post('/verify-bvn', [DojahVerificationController::class, 'verifyBvn']);
+    Route::post('/verify-nin', [DojahVerificationController::class, 'verifyNin']);
+    Route::post('/verify-dl', [DojahVerificationController::class, 'verifyDriverLicense']);
+    Route::get('/tiers-list', [DojahVerificationController::class, 'getAllTiers']);
+});
+

@@ -17,9 +17,9 @@ class Helpers
 
     public static $test_bank = 'test-bank';
     public static $live_bank = 'wema-bank';
-
+    
     // Amadeus Flight Booking features
-
+    
     public static function authenticate()
     {
         $client_id = getSettings('amadeus','apikey');
@@ -29,37 +29,37 @@ class Helpers
             'client_id'     => $client_id,
             'client_secret' => $client_secret,
         ]);
-
+        
         // dd($client_id, $client_secret, $response->body());
 
         if ($response->successful()) {
             return $response->json()['access_token'];
         }
-
-
+        
+        
     }
-
+    
     public static function searchAirports($keyword, $page = 0)
     {
         $token = self::authenticate();
-
+    
         if (!$token) {
             return ['error' => 'Failed to authenticate with Amadeus API'];
         }
-
+    
         $queryParams = [
             'subType' => 'AIRPORT',
             'keyword' => $keyword,
-            // 'countryCode' => $countryCode,
+            // 'countryCode' => $countryCode, 
             'view' => 'LIGHT',
         ];
-
+    
         if ($page) {
             $queryParams['page[offset]'] = $page;
         }
-
+    
         $response = Http::withToken($token)->get('https://test.api.amadeus.com/v1/reference-data/locations', $queryParams);
-
+    
         return $response->json();
     }
 
@@ -71,27 +71,27 @@ class Helpers
 
         return $response->json();
     }
-
-
+    
+    
     public static function getFlightPrice($flightOffer)
     {
         $accessToken = self::authenticate();
-
+    
         $response = Http::withToken($accessToken)
             ->post('https://test.api.amadeus.com/v2/shopping/flight-offers/pricing', [
                 'data' => [
                     'type' => 'flight-offers-pricing',
-                    'flightOffers' => [$flightOffer],
+                    'flightOffers' => [$flightOffer], 
                 ],
             ]);
-
+    
         return $response->json();
     }
-
+    
     public static function bookFlight($params)
     {
         $accessToken = self::authenticate();
-
+    
         $response = Http::withToken($accessToken)->post('https://test.api.amadeus.com/v1/booking/flight-orders', [
             'data' => [
                 'type'          => 'flight-order',
@@ -100,49 +100,49 @@ class Helpers
                 'payment'       => $params['payment'],
             ]
         ]);
-
+    
         return $response->json();
     }
 
 
-
+    
     // Nomba Endpoints
-
+    
     public static function refreshNombaToken(){
         $accountId = getSettings('nomba_default','accountId');
         $client_id = getSettings('nomba_default', 'client_id');
         $client_secret = getSettings('nomba_default', 'client_secret');
         $url = getSettings('nomba_default','sandboxurl');
-
+        
         $endpoint = $url."/auth/token/issue";
-
+        
         // dd($refresh_token, $access_token, $accountId);
-
+        
         $headers = [
             'Content-Type' => 'application/json',
             'accountId' => $accountId
         ];
-
+        
         $body = [
             "grant_type" => "client_credentials",
             "client_id" => $client_id,
             "client_secret" => $client_secret
         ];
-
+        
         $response = Http::withHeaders($headers)->post($endpoint, $body);
-
+        
         $default = AdminSetting::where('name', 'nomba_access_token')->first();
         $responseData = json_decode($response->body(), true);
-
+        
 
         if ($default && $responseData['code'] == 00) {
-            $default->data = $responseData['data'];
-            $default->save();
+            $default->data = $responseData['data'];  
+            $default->save();  
             return $responseData;
         }
-        return $responseData;
+        return $responseData; 
     }
-
+    
     public static function createNombaAccount($accountName){
         $accountId = getSettings('nomba_default','accountId');
         $get_access_token = self::refreshNombaToken();
@@ -151,32 +151,32 @@ class Helpers
         }
         $access_token = $get_access_token['data']['access_token'];
         $url = getSettings('nomba_default','sandboxurl');
-
-
+        
+        
         $endpoint = $url."/accounts/virtual";
-
+        
         // dd($accountId, $get_access_token, $url);
-
+        
         $headers = [
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $access_token,
             'accountId' => $accountId
         ];
-
+       
         $body = [
             "accountRef" => 'REF-' . Str::upper(Str::random(10)) . '-' . time(),
             "accountName" => $accountName,
         ];
 
         $response = Http::withHeaders($headers)->post($endpoint, $body);
-
-
-
+        
+        
+        
         $responseBody = json_decode($response->body(), true);
         // dd($responseBody);
         return json_decode($response->body(), true);
     }
-
+    
     public static function nombaTransfer ($bankCode, $account_number, $amount, $narration, $accountName){
         $accountId = getSettings('nomba_default','accountId');
         $get_access_token = self::refreshNombaToken();
@@ -185,16 +185,16 @@ class Helpers
         }
         $access_token = $get_access_token['data']['access_token'];
         $url = getSettings('nomba_default','sandboxurl');
-
-
-        $endpoint = $url."/transfers/bank";
-
+        
+        
+        $endpoint = $url."/transfers/bank"; 
+        
         $headers = [
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $access_token,
             'accountId' => $accountId
         ];
-
+        
         $body = [
             "amount" => $amount,
             "accountNumber" => $account_number,
@@ -206,11 +206,11 @@ class Helpers
         ];
 
         $response = Http::withHeaders($headers)->post($endpoint, $body);
-
+        
         return json_decode($response->body(), true);
-
+        
     }
-
+    
     public static function getBankList (){
         $accountId = getSettings('nomba_default','accountId');
         $get_access_token = self::refreshNombaToken();
@@ -219,22 +219,22 @@ class Helpers
         }
         $access_token = $get_access_token['data']['access_token'];
         $url = getSettings('nomba_default','sandboxurl');
-
-
+        
+        
         $endpoint = $url."/transfers/banks";
-
+        
         $headers = [
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $access_token,
             'accountId' => $accountId
         ];
-
+       
         $response = Http::withHeaders($headers)->get($endpoint);
-
+        
         return json_decode($response->body(), true);
-
+    
     }
-
+    
     public static function getAccountDetailsWithNomba($bankCode, $account_number){
         $accountId = getSettings('nomba_default','accountId');
         $get_access_token = self::refreshNombaToken();
@@ -243,213 +243,213 @@ class Helpers
         }
         $access_token = $get_access_token['data']['access_token'];
         $url = getSettings('nomba_default','sandboxurl');
-
-
+        
+        
         $endpoint = $url."/transfers/bank/lookup";
-
+        
         $headers = [
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $access_token,
             'accountId' => $accountId
         ];
-
+       
         $body = [
             "bankCode" => $bankCode,
             "accountNumber" => $account_number,
         ];
 
         $response = Http::withHeaders($headers)->post($endpoint, $body);
-
+        
         $responseBody = json_decode($response->body(), true);
-
+        
         return $responseBody;
     }
-
-
+    
+    
     // Reloadly Helpers
     public static function reloadlyToken(){
-
+        
         $grant_type = getSettings('reloadly_default','grant_type');
         $client_id = getSettings('reloadly_default','client_id');
         $client_secret = getSettings('reloadly_default','client_secret');
         $audience = getSettings('reloadly_default','audience');
-
+      
         $url = getSettings('safehaven_default','url');
-
+        
         $endpoint = "https://auth.reloadly.com/oauth/token";
-
+        
         $body = [
             "client_id" => $client_id,
             "client_secret" => "$client_secret",
             "grant_type" => $grant_type,
             "audience" => $audience
         ];
-
+        
         $response = Http::post($endpoint, $body);
         $responseData = json_decode($response->body(), true);
 
         return $responseData['access_token'];
     }
-
+    
     public static function getCardCountries(){
         $access_token = self::reloadlyToken();
         $url = getSettings('reloadly_access_token','url');
-
+        
         $endpoint = $url."/countries";
-
+        
         // dd($endpoint, $access_token);
-
+        
         $headers = [
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $access_token,
         ];
-
-
+        
+        
         $response = Http::withHeaders($headers)->get($endpoint);
-
+        
         return json_decode($response->body(), true);
     }
-
+    
     public static function getCardCountry($iso){
         $access_token = self::reloadlyToken();
         $url = getSettings('reloadly_access_token','url');
-
+        
         $endpoint = "$url/countries/$iso";
-
+        
         // dd($endpoint, $access_token);
-
+        
         $headers = [
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $access_token,
         ];
-
-
+        
+        
         $response = Http::withHeaders($headers)->get($endpoint);
-
+        
         return json_decode($response->body(), true);
     }
-
+    
     public static function getCardProducts(){
         $access_token = self::reloadlyToken();
         $url = getSettings('reloadly_access_token','url');
-
+        
         $endpoint = $url."/products";
-
+        
         // dd($endpoint, $access_token);
-
+        
         $headers = [
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $access_token,
         ];
-
-
+        
+        
         $response = Http::withHeaders($headers)->get($endpoint);
-
+        
         return json_decode($response->body(), true);
     }
-
+    
     public static function getProductCategories(){
         $access_token = self::reloadlyToken();
         $url = getSettings('reloadly_access_token','url');
-
+        
         $endpoint = $url."/product-categories";
-
+        
         // dd($endpoint, $access_token);
-
+        
         $headers = [
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $access_token,
         ];
-
-
+        
+        
         $response = Http::withHeaders($headers)->get($endpoint);
-
+        
         return json_decode($response->body(), true);
     }
-
+    
     public static function getProductDetails($pid){
         $access_token = self::reloadlyToken();
         $url = getSettings('reloadly_access_token','url');
-
+        
         $endpoint = "$url/products/$pid";
-
+        
         $headers = [
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $access_token,
         ];
-
-
+        
+        
         $response = Http::withHeaders($headers)->get($endpoint);
-
+        
         return json_decode($response->body(), true);
     }
-
+    
     public static function getProductRedeemInstructions($pid){
         $access_token = self::reloadlyToken();
         $url = getSettings('reloadly_access_token','url');
-
+        
         $endpoint = "$url/products/$pid/redeem-instructions";
-
+        
         $headers = [
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $access_token,
         ];
-
-
+        
+        
         $response = Http::withHeaders($headers)->get($endpoint);
-
+        
         return json_decode($response->body(), true);
     }
-
+    
     public static function getCountryProducts($iso){
         $access_token = self::reloadlyToken();
         $url = getSettings('reloadly_access_token','url');
-
+        
         $endpoint = "$url/countries/$iso/products";
-
+        
         // dd($endpoint, $access_token);
-
+        
         $headers = [
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $access_token,
         ];
-
-
+        
+        
         $response = Http::withHeaders($headers)->get($endpoint);
-
+        
         return json_decode($response->body(), true);
     }
-
+    
     public static function getFXRate($currency, $amount){
         $access_token = self::reloadlyToken();
         $url = getSettings('reloadly_access_token','url');
-
+        
         $endpoint = $url."/fx-rate/?currencyCode=$currency&amount=$amount";
-
+        
         // dd($endpoint, $access_token);
-
+        
         $headers = [
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $access_token,
         ];
-
-
+        
+        
         $response = Http::withHeaders($headers)->get($endpoint);
-
+        
         return json_decode($response->body(), true);
     }
-
+    
     public static function orderGiftCard($data){
         $access_token = self::reloadlyToken();
         $url = getSettings('reloadly_access_token','url');
-
+        
         $endpoint = "$url/orders";
-
+        
         $headers = [
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $access_token,
         ];
-
+        
         $body = [
             "productId" => $data['productId'],
             "countryCode" => $data['countryCode'],
@@ -462,32 +462,32 @@ class Helpers
                 "countryCode" => $data['recipientCountryCode'],
                 "phoneNumber" => $data['recipientPhoneNumber']
             ]
-
-
+            
+            
         ];
 
         $response = Http::withHeaders($headers)->post($endpoint, $body);
-
+        
         return json_decode($response->body(), true);
     }
-
+    
     public static function getRedeemCode($tid){
         $access_token = self::reloadlyToken();
         $url = getSettings('reloadly_access_token','url');
-
+        
         $endpoint = "$url/orders/transactions/$tid/cards";
-
+        
         $headers = [
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $access_token,
         ];
-
-
+        
+        
         $response = Http::withHeaders($headers)->get($endpoint);
-
+        
         return json_decode($response->body(), true);
     }
-
+    
     // Reloadly Features Ends here
     public static function handleCustomerPaystack($request_data) {
         $paysk = getSettings('paystack','secretkeypaystack');
@@ -502,16 +502,16 @@ class Helpers
             'last_name' => $request_data['surname'],
             'phone' => $request_data['phone_number'],
         ];
-
+        
         $response = Http::withHeaders($headers)->post('https://api.paystack.co/customer', $body);
-
+        
         $response_body = json_decode($response->body());
         if ($response_body->status == "true") {
             $dva = self::createCustomerDVA($response_body->data->id);
             return $dva;
         }
     }
-
+    
     public static function verifyBVNYouverify($bvn)
     {
         try {
@@ -565,7 +565,7 @@ class Helpers
             throw new \Exception(json_encode($errorResponse));
         }
     }
-
+    
     public static function handleCustomerStrowallet($request_data){
         $public_key = getSettings('strowallet','publickey');
         if ($public_key == "error") {return json_encode([]);}
@@ -581,12 +581,12 @@ class Helpers
             'webhook_url' => 'https://api.paypointapp.africa/api/StroAccountWebHook',
             'public_key' => $public_key
         ];
-
+        
         $response = Http::withHeaders($headers)->post('https://strowallet.com/api/virtual-bank/new-customer/', $body);
         // dd($response->body());
         return json_decode($response->body(), true);
     }
-
+    
     public static function handleVirtualCardAccount($request_data){
         $public_key = getSettings('strowallet','publickey');
         if ($public_key == "error") {return json_encode([]);}
@@ -604,8 +604,8 @@ class Helpers
             'customerEmail' => $request_data['email'],
             'phoneNumber' => $request_data['phone_number'],
             'dateOfBirth' => $request_data['dateOfBirth'],
-            'idImage' => $request_data['idImage'],
-            'userPhoto' => $request_data['userPhoto'],
+            'idImage' => $request_data['idImage'], 
+            'userPhoto' => $request_data['userPhoto'], 
             'line1' => $request_data['address'],
             'state' => $request_data['state'],
             'zipCode' => $request_data['zipcode'],
@@ -613,17 +613,17 @@ class Helpers
             'country' => 'Ghana', //$request_data['country'],
             'idType' => 'PASSPORT' //$request_data['idType'],
         ];
-
+        
         $response = Http::withHeaders($headers)->post('https://strowallet.com/api/bitvcard/create-user/', $body);
         // dd($response->body());
         return json_decode($response->body(), true);
     }
-
+    
     public static function createVirtualCard($user){
         $cardName = $user->first_name." ".$user->other_name." ".$user->surname;
         $cardName = ucwords(strtolower($cardName));
         $email = $user->email;
-
+        
         $public_key = getSettings('strowallet','publickey');
         $amount = getSettings('card_charges','deposit');
         if ($public_key == "error") {return json_encode([]);}
@@ -631,7 +631,7 @@ class Helpers
             'accept' => 'application/json',
             'content-type' => 'application/json',
         ];
-
+          
         $body = [
             'public_key' => $public_key,
             'name_on_card' => $cardName,
@@ -639,18 +639,18 @@ class Helpers
             'amount' => $amount,
             'customerEmail' => $email,
             'mode' => 'sandbox'
-
+            
         ];
-
+        
         $response = Http::withHeaders($headers)->post('https://strowallet.com/api/bitvcard/create-card/', $body);
         return json_decode($response->body(), true);
     }
-
+    
     public static function createLiveVirtualCard($user){
         $cardName = $user->first_name." ".$user->other_name." ".$user->surname;
         $cardName = ucwords(strtolower($cardName));
         $email = $user->email;
-
+        
         $public_key = getSettings('strowallet','publickey');
         $amount = getSettings('card_charges','deposit');
         if ($public_key == "error") {return json_encode([]);}
@@ -658,7 +658,7 @@ class Helpers
             'accept' => 'application/json',
             'content-type' => 'application/json',
         ];
-
+          
         $body = [
             'public_key' => $public_key,
             'name_on_card' => $cardName,
@@ -666,132 +666,132 @@ class Helpers
             'amount' => $amount,
             'customerEmail' => $email,
         ];
-
+        
         $response = Http::withHeaders($headers)->post('https://strowallet.com/api/bitvcard/create-card/', $body);
         return json_decode($response->body(), true);
     }
-
+    
     public static function fundCard($data){
-
+        
         $public_key = getSettings('strowallet','publickey');
-
+        
         if ($public_key == "error") {return json_encode([]);}
         $headers = [
             'accept' => 'application/json',
             'content-type' => 'application/json',
         ];
-
+          
         $body = [
             'public_key' => $public_key,
             'card_id' => $data['card_id'],
             'amount' => $data['amount'],
             // 'mode' => 'sandbox'
         ];
-
+        
         $response = Http::withHeaders($headers)->post('https://strowallet.com/api/bitvcard/fund-card/', $body);
         return json_decode($response->body(), true);
     }
-
+    
     public static function cardTransactions($card_id){
-
+        
         $public_key = getSettings('strowallet','publickey');
-
+        
         if ($public_key == "error") {return json_encode([]);}
         $headers = [
             'accept' => 'application/json',
             'content-type' => 'application/json',
         ];
-
+          
         $body = [
             'public_key' => $public_key,
             'card_id' => $card_id,
             // 'mode' => 'sandbox'
         ];
-
+        
         $response = Http::withHeaders($headers)->post('https://strowallet.com/api/bitvcard/card-transactions/', $body);
         return json_decode($response->body(), true);
     }
-
+    
     public static function cardDetails($card_id){
-
+        
         $public_key = getSettings('strowallet','publickey');
-
+        
         if ($public_key == "error") {return json_encode([]);}
         $headers = [
             'accept' => 'application/json',
             'content-type' => 'application/json',
         ];
-
+          
         $body = [
             'public_key' => $public_key,
             'card_id' => $card_id,
         ];
-
+        
         $response = Http::withHeaders($headers)->post('https://strowallet.com/api/bitvcard/fetch-card-detail/', $body);
         return json_decode($response->body(), true);
     }
-
+    
     public static function withdrawFromCard($data){
-
+        
         $public_key = getSettings('strowallet','publickey');
         $card_id = $data['card_id'];
         $amount = $data['amount'];
-
+        
         if ($public_key == "error") {return json_encode([]);}
         $headers = [
             'accept' => 'application/json',
             'content-type' => 'application/json',
         ];
-
+          
         $response = Http::withHeaders($headers)->post("https://strowallet.com/api/bitvcard/card_withdraw/?card_id=$card_id&amount=$amount&public_key=$public_key");
-
+        
         return json_decode($response->body(), true);
     }
-
-
+    
+    
     public static function freezeCard($card_id, $action){
-
+        
         $public_key = getSettings('strowallet','publickey');
-
+        
         if ($public_key == "error") {return json_encode([]);}
         $headers = [
             'accept' => 'application/json',
             'content-type' => 'application/json',
         ];
-
+          
         $body = [
             'public_key' => $public_key,
             'card_id' => $card_id,
             'action' => $action
         ];
-
+        
         $response = Http::withHeaders($headers)->post('https://strowallet.com/api/bitvcard/action/status/', $body);
         return json_decode($response->body(), true);
     }
-
+    
     public static function withdrawalStatus($ref){
-
+        
         $public_key = getSettings('strowallet','publickey');
-
+        
         if ($public_key == "error") {return json_encode([]);}
         $headers = [
             'accept' => 'application/json',
             'content-type' => 'application/json',
         ];
-
+        
         $response = Http::withHeaders($headers)->get("https://strowallet.com/api/bitvcard/getcard_withdrawstatus/?reference=$ref&public_key=$public_key");
-
+          
         return json_decode($response->body(), true);
     }
-
+    
     public static function addBeneficiary($type, $data, $name = null, $number = null, $provider = null)
     {
-
+        
         $existingBeneficiary = Beneficiary::where('user_id', Auth::id())
             ->where('type', $type)
             ->where('number', $number)
             ->first();
-
+    
         if (!$existingBeneficiary) {
             return Beneficiary::create([
                 'user_id' => Auth::id(),
@@ -802,11 +802,11 @@ class Helpers
                 'provider' => $provider
             ]);
         }
-
-
+    
+        
     }
 
-
+    
 
     public static function createCustomerDVA($customer_id) {
         $paysk = getSettings('paystack','secretkeypaystack');
@@ -816,10 +816,10 @@ class Helpers
             'authorization' => 'Bearer ' . $paysk
         ];
         $body = [
-            "customer" => $customer_id,
+            "customer" => $customer_id, 
             "preferred_bank" => config('app.env') == "local" ? self::$test_bank : self::$live_bank
         ];
-
+        
         $request = Http::withHeaders($headers)->post('https://api.paystack.co/dedicated_account', $body);
         $response = json_decode($request->body());
         return $response;
@@ -861,7 +861,7 @@ class Helpers
     //         return response()->json($errorResponse, 500); // You might want to use a more appropriate HTTP status code
     //     }
     // }
-
+    
 }
 
 // function getSettingsAPI($n,$k) {
@@ -878,7 +878,7 @@ class Helpers
 //     return $data->$k;
 // }
 
-function retErrorSetting0() {
+function retErrorSetting() {
     return [
         'status'=>'false',
         'data'=>[

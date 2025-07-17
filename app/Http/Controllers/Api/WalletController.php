@@ -564,7 +564,7 @@
             }
             
             // Fetch user balance
-            if($user->id != 122){
+            if($user->id != 122 || $user->id != 151){
                 $balance = $user->balance;
                 
                 $debitTypeArray = [
@@ -599,7 +599,7 @@
                 $newTransaction = $amount + $allDebitTransactions; //dd($sumOfDeposits);
                 
                 // Restrict accounts based on conditions
-                if (!in_array($user->id, [1, 2, 3])) { // Exclude specific user IDs
+                if (!in_array($user->id, [1, 2, 3, 122, 151,147])) { // Exclude specific user IDs
                     if ($mode !== "+") {
                         if (
                             ($firstTransaction && !in_array($firstTransaction->type, $creditTypeArray)) ||

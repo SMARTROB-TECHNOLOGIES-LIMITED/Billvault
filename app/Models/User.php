@@ -45,7 +45,8 @@ class User extends Authenticatable
         'code',
         'referral',
         'account_name',
-        'bank_name'
+        'bank_name',
+        'is_bvn_verified'
     ];
 
     /**
@@ -83,7 +84,7 @@ class User extends Authenticatable
     }
     public function tier2()
     {
-        return $this->hasOne(Tier2::class);
+        return $this->hasOne(TierTwo::class);
     }
     public function cardDetails()
     {

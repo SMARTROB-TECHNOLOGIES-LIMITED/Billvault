@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Mail\TokenMail;
 use App\Models\AirtimeToCash;
 use GuzzleHttp\Client;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
 use App\Jobs\TransactionLog;
 use App\Notifications\TransactionNotification;
@@ -39,14 +40,14 @@ class Utility extends Controller
     public function __construct(FirebaseService $firebaseService)
     {
         $this->firebaseService = $firebaseService;
-        
+
         $this->serviceList = [
             ['name' => 'Mtn', 'img' => asset('assets/images/vtu/mtn.jpg'), 'airtime' => "mtn", 'data' => "mtn-data"],
             ['name' => '9mobile', 'img' => asset('assets/images/vtu/etisalat.jpg'), 'airtime' => "etisalat", 'data' => "etisalat-data"],
             ['name' => 'Airtel', 'img' => asset('assets/images/vtu/airtel.jpg'), 'airtime' => "airtel", 'data' => "airtel-data"],
             ['name' => 'Glo', 'img' => asset('assets/images/vtu/glo.jpg'), 'airtime' => "glo", 'data' => "glo-data"]
         ];
-        
+
         $this->dataAirtimeList = [
             ['name' => 'Mtn', 'img' => asset('assets/images/vtu/mtn.jpg'), 'airtime' => "mtn", 'data' => "mtn-data"],
             ['name' => '9mobile', 'img' => asset('assets/images/vtu/etisalat.jpg'), 'airtime' => "etisalat", 'data' => "etisalat-data"],
@@ -56,16 +57,16 @@ class Utility extends Controller
             // ['name' => 'Glo SME', 'img' => asset('assets/images/vtu/glo.jpg'), 'data' => "glo-sme-data"],
             ['name' => 'Spectranet', 'img' => asset('assets/images/vtu/spectranet.jpeg'), 'data' => "spectranet"],
             ['name' => 'Smile', 'img' => asset('assets/images/vtu/smile.jpeg'), 'data' => "smile-direct"]
-            
+
         ];
-        
+
         $this->cableList = [
             ['name' => 'DSTV', 'img' => asset('assets/images/cable/dstv.jpg'), 'serviceID' => "dstv", 'convenience_fee' => 0],
             ['name' => 'GOTV Payment', 'img' => asset('assets/images/cable/gotv.jpg'), 'serviceID' => "gotv", 'convenience_fee' => 0],
             ['name' => 'StarTimes Subscription', 'img' => asset('assets/images/cable/startimes.jpg'), 'serviceID' => "startimes", 'convenience_fee' => 0],
             ['name' => 'ShowMax', 'img' => asset('assets/images/cable/showmax.jpg'), 'serviceID' => "showmax", 'convenience_fee' => 0]
         ];
-        
+
         $this->electricityList = [
             ['name' => 'Ikeja Electric - IKEDC', 'img' => asset('assets/images/electricity/ikeja.png'), 'serviceID' => "ikeja-electric", 'convenience_fee' => 0],
             ['name' => 'Eko Electric - EKEDC', 'img' => asset('assets/images/electricity/ekedc.jpg'), 'serviceID' => "eko-electric", 'convenience_fee' => 0],
@@ -78,7 +79,7 @@ class Utility extends Controller
             ['name' => 'Enugu Electric - EEDC', 'img' => asset('assets/images/electricity/enugu.png'), 'serviceID' => "enugu-electric", 'convenience_fee' => 0],
             ['name' => 'Benin Electric - BEDC', 'img' => asset('assets/images/electricity/benin.jpeg'), 'serviceID' => "benin-electric", 'convenience_fee' => 0],
         ];
-        
+
         $this->betsites = [
             ['id' => 1, 'name' => 'Betnaija', 'img' => asset('assets/images/bet/betnaija.jpeg')],
             ['id' => 2, 'name' => 'Sportybet', 'img' => asset('assets/images/bet/sportybet.png')],
@@ -94,14 +95,16 @@ class Utility extends Controller
             ['id' => 12, 'name' => 'Bangbet', 'img' => asset('assets/images/bet/bangbet.jpg')],
             ['id' => 14, 'name' => 'NaijaBet', 'img' => asset('assets/images/bet/naijabet.jpeg')],
         ];
-        
+
         $this->waecServices = [
             ['name' => 'WAEC Result Checker', 'serviceID' => "waec", 'convenience_fee' => 0],
             ['name' => 'WAEC Registration', 'serviceID' => "waec-registration", 'convenience_fee' => 0],
         ];
     }
-    
-    
+
+
+
+
     public function getNetworkList()
     {
         $networks = AirtimeToCash::select('id', 'network_name', 'image')
@@ -133,8 +136,8 @@ class Utility extends Controller
             'data' => $network,
         ]);
     }
-    
-    
+
+
     public function processAirtimeToCash(Request $request)
         {
             $rules = [
@@ -142,7 +145,7 @@ class Utility extends Controller
             'network_id' => 'required|exists:airtime_to_cashes,id',
             'sender_number' => 'required|numeric',
         ];
-    
+
         $messages = [
             'amount.required' => 'The amount is required.',
             'amount.numeric' => 'The amount must be a valid number.',
@@ -152,10 +155,10 @@ class Utility extends Controller
             'sender_number.required' => 'The sender number is required.',
             'sender_number.numeric' => 'The sender number must be numeric.',
         ];
-    
+
         // Perform validation
         $validator = Validator::make($request->all(), $rules, $messages);
-    
+
         if ($validator->fails()) {
             // Return custom error response
             return response()->json([
@@ -164,7 +167,7 @@ class Utility extends Controller
                 'message' => 'Validation failed. Please fix the errors and try again.'
             ], 422); // HTTP status code 422: Unprocessable Entity
         }
-    
+
         // Proceed with your logic if validation passes
         $validated = $validator->validated();
 
@@ -201,20 +204,20 @@ class Utility extends Controller
             'img' => asset($network->image),
             'request_id' => $requestId
         ];
-        
+
         TransactionLog::dispatch(Auth::user()->id,'ATC',$payableAmount,$requestId,'Pending',$request['sender_number'],json_encode($data));
-        
+
         return response()->json([
             'status'=>'true',
             'data' => ['message' => "Airtime to Cash processed, you will be credited once confirmed.",'transaction_id' => $requestId]
         ],200);
-        
+
     }
 
-    
-    
+
+
     // New End point logics
-   
+
     public function getAirtimeList() {
         // $arr = $this->serviceList;
         $airtimeList = array_filter($this->dataAirtimeList, function($service) {
@@ -232,7 +235,7 @@ class Utility extends Controller
 
     public function getDataList() {
         $arr = $this->dataAirtimeList;
-        
+
         return response()->json([
             'status'=>'true',
             'data' => [
@@ -241,14 +244,14 @@ class Utility extends Controller
             ]
         ],200);
     }
-    
+
     public function verifySmileEmail(Request $request) {
         $validatedData = Validator::make($request->all(['serviceID','billersCode']), [
             'billersCode' => ['required','email'],
             'serviceID' => ['required']
 
         ],[
-            
+
             'billersCode.required' => 'Smile required',
             'billersCode.numeric' => 'Smile must be a valide email address',
             'serviceID.required' => 'Service ID is required'
@@ -305,9 +308,9 @@ class Utility extends Controller
             ]
         ],400);
     }
-    
+
     public function internationalCountries(Request $request) {
-        
+
         $vtapi = getSettings('vtpass','apikeyvtpass');
         $vtsecret = getSettings('vtpass','secretkeyvtpass');
         if ($vtapi == "error" || $vtsecret == "error") {return response()->json(retErrorSetting());}
@@ -334,23 +337,23 @@ class Utility extends Controller
             ]
         ],400);
 
-       
+
     }
-    
+
     public function productType($e) {
-        
+
         $vtapi = getSettings('vtpass','apikeyvtpass');
         $vtsecret = getSettings('vtpass','secretkeyvtpass');
-        
+
         if ($vtapi == "error" || $vtsecret == "error") {return response()->json(retErrorSetting());}
         $requestParams = Http::withHeaders([
             'api-key' => $vtapi,
             'secret-key' => $vtsecret,
         ])->get('https://vtpass.com/api/get-international-airtime-product-types?code='.$e);
-        
+
         $response = json_decode($requestParams->body());
         if ($response->response_description == '000' && !isset($response->content->error)) {
-            
+
         return response()->json([
                 'status'=>'true',
                 'data' => [
@@ -367,21 +370,21 @@ class Utility extends Controller
             ]
         ],400);
     }
-    
+
     public function internationalAirtimeOperator($code, $e) {
-        
+
         $vtapi = getSettings('vtpass','apikeyvtpass');
         $vtsecret = getSettings('vtpass','secretkeyvtpass');
-        
+
         if ($vtapi == "error" || $vtsecret == "error") {return response()->json(retErrorSetting());}
         $requestParams = Http::withHeaders([
             'api-key' => $vtapi,
             'secret-key' => $vtsecret,
         ])->get('https://vtpass.com/api/get-international-airtime-operators?code='.$code.'&product_type_id='.$e);
-        
+
         $response = json_decode($requestParams->body());
         if ($response->response_description == '000' && !isset($response->content->error)) {
-            
+
         return response()->json([
                 'status'=>'true',
                 'data' => [
@@ -398,18 +401,18 @@ class Utility extends Controller
             ]
         ],400);
     }
-    
+
     public function internationalAirtimeVariationCode($operatorID, $productID) {
-        
+
         $vtapi = getSettings('vtpass','apikeyvtpass');
         $vtsecret = getSettings('vtpass','secretkeyvtpass');
-        
+
         if ($vtapi == "error" || $vtsecret == "error") {return response()->json(retErrorSetting());}
         $requestParams = Http::withHeaders([
             'api-key' => $vtapi,
             'secret-key' => $vtsecret,
         ])->get("https://vtpass.com/api/service-variations?serviceID=foreign-airtime&operator_id=$operatorID&product_type_id=$productID");
-        
+
         $response = json_decode($requestParams->body());
         if($response == null){
             return response()->json([
@@ -421,7 +424,7 @@ class Utility extends Controller
             ],400);
         }
         if ($response->response_description == '000' && !isset($response->content->error)) {
-            
+
         return response()->json([
                 'status'=>'true',
                 'data' => [
@@ -438,7 +441,7 @@ class Utility extends Controller
             ]
         ],400);
     }
-    
+
     public function purchaseInternationalAirtime(Request $request) {
         $validatedData = Validator::make($request->all(['transaction_pin', 'billersCode', 'variation_code', 'amount', 'phone', 'operator_id', 'country_code', 'product_type_id']), [
             'transaction_pin' => ['required','numeric','digits:4', new TransactionPin],
@@ -464,7 +467,7 @@ class Utility extends Controller
             'operator_id.required' => 'Field is required',
             'country_code.required' => 'Field is required',
             'product_type_id.required' => 'Field is required',
-            
+
         ]);
 
         if ($validatedData->fails()) {
@@ -476,10 +479,10 @@ class Utility extends Controller
                 ]
             ],400);
         }
-        
+
         $request = Purify::clean($request->all());
         // $result = collect($this->serviceList)->pluck('airtime')->contains($request['serviceID']);
-        
+
             $status = 'pending';
             // Set the timezone to Africa/Lagos
             $now = Carbon::now('Africa/Lagos');
@@ -519,11 +522,11 @@ class Utility extends Controller
                 'country_code' => $request['country_code'],
                 'product_type_id' => $request['product_type_id'],
                 'email' => Auth::user()->email
-                
+
             ]);
-            
+
             $response = json_decode($requestParams->body());
-            
+
             if($response->code != 000){
                 $dedRes = json_decode($wallet->callWalletUpdate($request['amount'], 'id', Auth::user()->id, '+'));
                 return response()->json([
@@ -533,7 +536,7 @@ class Utility extends Controller
                         'error'=> $response
                     ]
                 ],400);
-               
+
             }
             $data = [
                 'service_name' => $response->content->transactions->product_name,
@@ -576,10 +579,10 @@ class Utility extends Controller
                     $reFront = response()->json(['status'=>'false','data' => ['message' => "Airtime purchase failed"]],400);
                 }
             }
-            
+
             TransactionLog::dispatch(Auth::user()->id,'Airtime',$request['amount'],$requestId,$status,$request['phone'],json_encode($data));
             return $reFront;
-        
+
         return response()->json([
             'status'=>'false',
             'data' => [
@@ -588,9 +591,9 @@ class Utility extends Controller
             ]
         ],400);
     }
-    
+
     // International Airtime for logics ends here
-    
+
     // Betting Platforms API
     public function bettingPlatform() {
         $arr = $this->betsites;
@@ -603,14 +606,14 @@ class Utility extends Controller
             ]
         ],200);
     }
-    
+
     public function verifyBettingID(Request $request) {
         $validatedData = Validator::make($request->all(['betsite_id','betting_number']), [
             'betting_number' => ['required','numeric'],
             'betsite_id' => ['required']
 
         ],[
-            
+
             'betting_number.required' => 'Betting number required',
             'betting_number.numeric' => 'Betting number accepts numbers only',
             'betsite_id.required' => 'Bet site is required'
@@ -627,10 +630,10 @@ class Utility extends Controller
         }
 
         $request = Purify::clean($request->all());
-        
+
         $betsite_id = $request['betsite_id'];
         $betting_number = $request['betting_number'];
-        
+
         $ncpin = getSettings('ncwallet','tran_pin');
         $ncsecret = getSettings('ncwallet','secretkey');
         if ($ncpin == "error" || $ncsecret == "error") {return response()->json(retErrorSetting());}
@@ -668,7 +671,7 @@ class Utility extends Controller
             ]
         ],400);
     }
-    
+
     public function fundBettingAccount(Request $request){
         $validatedData = Validator::make($request->all(['betsite_id','betting_number', 'amount', 'transaction_pin']), [
             'betting_number' => ['required','numeric'],
@@ -677,7 +680,7 @@ class Utility extends Controller
             'transaction_pin' => ['required','numeric','digits:4', new TransactionPin],
             'is_beneficiary' => ['boolean']
         ],[
-            
+
             'amount.required' => 'Amount is required',
             'amount.numeric' => 'Amount must be numeric',
             'amount.min' => 'Amount must be at least N100',
@@ -702,7 +705,7 @@ class Utility extends Controller
         }
 
         $request = Purify::clean($request->all());
-        
+
         $betsite_id = $request['betsite_id'];
         $betting_number = $request['betting_number'];
         $amount = $request['amount'];
@@ -710,7 +713,7 @@ class Utility extends Controller
         $requestId = $now->format('YmdHi');
         $requestId = 'BET'. $requestId . Str::random(10);
         $is_beneficiary = isset($request['is_beneficiary']) ? $request['is_beneficiary'] : null;
-        
+
         $wallet = new WalletController();
         $dedRes = json_decode($wallet->callWalletUpdate($amount, 'id', Auth::user()->id, '-'));
         if ($dedRes->code !== 1) {
@@ -722,7 +725,7 @@ class Utility extends Controller
                 ]
             ],400);
         }
-        
+
         $ncpin = getSettings('ncwallet','tran_pin');
         $ncsecret = getSettings('ncwallet','secretkey');
         $body = [
@@ -739,36 +742,36 @@ class Utility extends Controller
             'Accept' => 'application/json',
             'Content-Type' => 'application/json',
         ])->post("https://ncwallet.africa/api/v1/betting", $body);
-        
-        
+
+
 
         $response = json_decode($requestParams->body());
-        
-        
+
+
         $reFront = response()->json([
             'status'=>'true',
             'data' => ['message' => "Betting Wallet Successfully Funded",'transaction_id' => $requestId]
         ],200);
-        
-        
-        
+
+
+
         if ($response->status == 'success' ) {
             $data = $response->data;
             $betlogo = collect($this->betsites)->firstWhere('id', $betsite_id)['img'] ?? null;
-            $data->img = $betlogo; 
-            
-            
+            $data->img = $betlogo;
+
+
             unset($data->oldbal, $data->newbal);
-            
+
             if (isset($is_beneficiary) && ($is_beneficiary == 1 || $is_beneficiary == true)) {
                 Helpers::addBeneficiary('betting', json_encode($data), $data->customer_name, $data->betting_number, $data->betsite_company);
             }
             TransactionLog::dispatch(Auth::user()->id,'Betting',$amount,$requestId,'successful',$betting_number, json_encode($data));
             return $reFront;
         }
-        
+
         $dedRes = json_decode($wallet->callWalletUpdate($amount, 'id', Auth::user()->id, '+'));
-        
+
         unset($response->oldbal, $response->newbal);
         return response()->json([
             'status'=>'false',
@@ -777,9 +780,9 @@ class Utility extends Controller
                 'error' => $response
             ]
         ],400);
-        
+
     }
-    
+
     // Betting Platform API Ends here
 
     public function getTvSubscriptionList() {
@@ -793,7 +796,7 @@ class Utility extends Controller
             ]
         ],200);
     }
-    
+
     public function purchaseAirtime(Request $request) {
         $validatedData = Validator::make($request->all(['transaction_pin','amount','serviceID','phone','package', 'is_beneficiary']), [
             'amount' => ['required','numeric','min:50'],
@@ -826,7 +829,7 @@ class Utility extends Controller
                 ]
             ],400);
         }
-        
+
         $request = Purify::clean($request->all());
         $result = collect($this->serviceList)->pluck('airtime')->contains($request['serviceID']);
         if ($result) {
@@ -865,12 +868,12 @@ class Utility extends Controller
                 'phone' => $request['phone'],
                 'request_id' => $requestId
             ]);
-            
+
             $response = json_decode($requestParams->body());
-            
+
             $user = Auth::user();
             $deviceToken = $user->device_token;
-            
+
             if($response->code != 000){
                 $dedRes = json_decode($wallet->callWalletUpdate($request['amount'], 'id', Auth::user()->id, '+'));
                 return response()->json([
@@ -881,11 +884,11 @@ class Utility extends Controller
                         'res' => $response
                     ]
                 ],400);
-               
+
             }
-            
+
             $currentBalance = $user->balance;
-            
+
             $balanceBefore = $currentBalance;
             $balanceAfter = $currentBalance - $request['amount'];
             $data = [
@@ -900,7 +903,7 @@ class Utility extends Controller
             ];
 
             $is_beneficiary = isset($request['is_beneficiary']) ? $request['is_beneficiary'] : null;
-            
+
             if (isset($is_beneficiary) && ($is_beneficiary == 1 || $is_beneficiary == true)) {
                 Helpers::addBeneficiary('airtime', json_encode($data), '', $request['phone'], $response->content->transactions->product_name );
             }
@@ -921,7 +924,7 @@ class Utility extends Controller
                     $reFront = response()->json(['status'=>'false','data' => ['message' => "Airtime purchase failed"]],400);
                 }
             // }
-            
+
             if(!is_null($deviceToken)){
                 $title = "Airtime Purchase";
                 $body = "Transaction $status";
@@ -935,7 +938,7 @@ class Utility extends Controller
                     null, // Optional URL
                     ['transaction_id' => $requestId]
                 ));
-            
+
             TransactionLog::dispatch(Auth::user()->id,'Airtime',$request['amount'],$requestId,$status,$request['phone'],json_encode($data));
             return $reFront;
         }
@@ -984,7 +987,7 @@ class Utility extends Controller
 
 
             $wallet = new WalletController();
-            $dedRes = json_decode($wallet->callWalletUpdate($amount, 'id', $user_id));   
+            $dedRes = json_decode($wallet->callWalletUpdate($amount, 'id', $user_id));
             if ($dedRes) {
                 TransactionLog::dispatch($user_id,null,null,$requestId,'reversed',null,null);
                 Storage::put('vtu/reversed-'.Carbon::now()->format('Y-m-d_His'), json_encode($request, JSON_PRETTY_PRINT));
@@ -994,7 +997,7 @@ class Utility extends Controller
         }
         return response()->json(['response'=>'error']);
     }
-    
+
     public function dataVariationList($e) {
         $result = collect($this->dataAirtimeList)->pluck('data')->contains($e);
 
@@ -1006,9 +1009,9 @@ class Utility extends Controller
                 'api-key' => $vtapi,
                 'secret-key' => $vtsecret,
             ])->get('https://vtpass.com/api/service-variations?serviceID='.$e);
-            
+
             $response = json_decode($requestParams->body())->content;
-            
+
             if(isset($response->ServiceName)){
                 return response()->json([
                     'status'=>'true',
@@ -1026,7 +1029,7 @@ class Utility extends Controller
                 ],400);
             }
 
-            
+
         }
         return response()->json([
             'status'=>'false',
@@ -1077,15 +1080,15 @@ class Utility extends Controller
         $status = 'pending';
         $amount = $request['amount'];
         $phone = $request['phone'];
-        
+
         $user = Auth::user();
         $deviceToken = $user->device_token;
-        
+
         $currentBalance = $user->balance;
-            
+
         $balanceBefore = $currentBalance;
         $balanceAfter = $currentBalance - $amount;
-        
+
         if ($result) {
             // Set the timezone to Africa/Lagos
             $now = Carbon::now('Africa/Lagos');
@@ -1106,7 +1109,7 @@ class Utility extends Controller
                     ]
                 ],400);
             }
-            
+
             $vtapi = getSettings('vtpass','apikeyvtpass');
             $vtsecret = getSettings('vtpass','secretkeyvtpass');
             if ($vtapi == "error" || $vtsecret == "error") {return response()->json(retErrorSetting());}
@@ -1132,9 +1135,9 @@ class Utility extends Controller
                         'error'=> $response
                     ]
                 ],400);
-               
+
             }
-            
+
             $data = [
                 'service_name' => $response->content->transactions->product_name,
                 'type' => $response->content->transactions->type,
@@ -1145,9 +1148,9 @@ class Utility extends Controller
                 'balance_before'    => $balanceBefore,
                 'balance_after'     => $balanceAfter,
             ];
-            
+
             $is_beneficiary = isset($request['is_beneficiary']) ? $request['is_beneficiary'] : null;
-           
+
             if (isset($is_beneficiary) && ($is_beneficiary == 1 || $is_beneficiary == true)) {
                 Helpers::addBeneficiary('data', json_encode($data), '', $request['phone'], $response->content->transactions->product_name);
             }
@@ -1167,7 +1170,7 @@ class Utility extends Controller
                 $wallet->callWalletUpdate($request['amount'], 'id', Auth::user()->id, '+');
                 $reFront = response()->json(['status'=>'false','data'=>['message' => "Data purchase failed"]],400);
             }
-            
+
             if(!is_null($deviceToken)){
                 $title = "Data Purchase";
                 $body = "Transaction $status";
@@ -1200,7 +1203,7 @@ class Utility extends Controller
             'serviceID' => ['required']
 
         ],[
-            
+
             'billersCode.required' => 'Metre number required',
             'billersCode.numeric' => 'Metre number accepts numbers only',
             'serviceID.required' => 'Service ID is required'
@@ -1257,7 +1260,7 @@ class Utility extends Controller
             ]
         ],400);
     }
-    
+
     public function tvProviderVariationList($e) {
         $result = collect($this->cableList)->pluck('serviceID')->contains($e);
 
@@ -1269,7 +1272,7 @@ class Utility extends Controller
                 'api-key' => $vtapi,
                 'secret-key' => $vtsecret,
             ])->get('https://vtpass.com/api/service-variations?serviceID='.$e);
-            
+
             $response = json_decode($requestParams->body())->content;
 
             return response()->json([
@@ -1313,8 +1316,8 @@ class Utility extends Controller
             'variation_code.required' => 'Field is required',
             'is_beneficiary.boolean' => 'Beneficiary status must be true or false',
         ]);
-            
-        
+
+
         if ($validatedData->fails()) {
             return response()->json([
                 'status'=>'false',
@@ -1328,10 +1331,10 @@ class Utility extends Controller
         $request = Purify::clean($request->all());
         $collect = collect($this->cableList);
         $is_beneficiary = isset($request['is_beneficiary']) ? $request['is_beneficiary'] : null;
-        
+
         $user = Auth::user();
         $deviceToken = $user->device_token;
-        
+
 
         if ($collect->pluck('serviceID')->contains($request['serviceID'])) {
             // Set the timezone to Africa/Lagos
@@ -1343,10 +1346,10 @@ class Utility extends Controller
             $conv_fee = AdminSetting::where('name','cable')->first(['data'])->data ?? $collect->where('serviceID', $request['serviceID'])->pluck('convenience_fee')->first();
             $amount = $request['amount'];
             $amount_w_conv_fee = $request['amount'] + $conv_fee;
-            
-            
+
+
             $currentBalance = $user->balance;
-            
+
             $balanceBefore = $currentBalance;
             $balanceAfter = $currentBalance - $amount_w_conv_fee;
 
@@ -1388,7 +1391,7 @@ class Utility extends Controller
                         'error'=> $response
                     ]
                 ],400);
-               
+
             }
             if (isset($response->content->transactions->status,$response->content->transactions->type,$response->content->transactions->product_name)) {
                 $data = [
@@ -1416,7 +1419,7 @@ class Utility extends Controller
                     $status = 'failed';
                 }
                 $savedData =[
-                    'service_name' => $response->content->transactions->product_name, 
+                    'service_name' => $response->content->transactions->product_name,
                     'type' => $response->content->transactions->type,
                     'serviceID' => $request['serviceID'],
                     'billersCode' => $request['billersCode'],
@@ -1457,14 +1460,14 @@ class Utility extends Controller
         $validatedData = Validator::make($request->all(['type','billersCode']), [
             'type' => ['required','in:prepaid,postpaid'],
             'billersCode' => ['required','numeric'],
-            
+
 
         ],[
             'type.required' => 'Please select metre type',
             'type.in' => 'Only prepaid or postpaid allowed',
             'billersCode.required' => 'Metre number required',
             'billersCode.numeric' => 'Metre number accepts numbers only',
-            
+
         ]);
 
         if ($validatedData->fails()) {
@@ -1476,7 +1479,7 @@ class Utility extends Controller
                 ]
             ],400);
         }
-        
+
         $request = Purify::clean($request->all());
         $result = collect($this->electricityList)->pluck('serviceID')->contains($request['serviceID']);
         if ($result) {
@@ -1574,9 +1577,9 @@ class Utility extends Controller
         $is_beneficiary = isset($request['is_beneficiary']) ? $request['is_beneficiary'] : null;
         $request = Purify::clean($request->all());
         $collect = collect($this->electricityList);
-        
+
         $user= Auth::user();
-        
+
         if ($collect->pluck('serviceID')->contains($request['serviceID'])) {
             // Set the timezone to Africa/Lagos
             $now = Carbon::now('Africa/Lagos');
@@ -1587,12 +1590,12 @@ class Utility extends Controller
             $conv_fee = AdminSetting::where('name','electricity')->first(['data'])->data ?? $collect->where('serviceID', $request['serviceID'])->pluck('convenience_fee')->first();
             $amount = $request['amount'];
             $amount_w_conv_fee = $request['amount'] + $conv_fee;
-            
+
             $currentBalance = $user->balance;
-            
+
             $balanceBefore = $currentBalance;
             $balanceAfter = $currentBalance - $amount_w_conv_fee;
-            
+
             //Deduct amount
             $wallet = new WalletController();
             $dedRes = json_decode($wallet->callWalletUpdate($amount_w_conv_fee, 'id', Auth::user()->id, '-'));
@@ -1622,9 +1625,9 @@ class Utility extends Controller
             ]);
 
             $response = json_decode($requestParams->body());
-            
+
             // dd($response, Auth::user()->phone_number );
-            
+
             if($response->code != 000){
                 $dedRes = json_decode($wallet->callWalletUpdate($request['amount'], 'id', Auth::user()->id, '+'));
                 return response()->json([
@@ -1634,7 +1637,7 @@ class Utility extends Controller
                         'error'=> $response
                     ]
                 ],400);
-               
+
             }
             if (isset($response->content->transactions->status,$response->content->transactions->type,$response->content->transactions->product_name)) {
                 $token = $response->token ?? $response->purchase_code ?? $response->mainToken;
@@ -1662,14 +1665,14 @@ class Utility extends Controller
                     'billersCode' => $request['billersCode'],
                     // 'Customer_Name' =>$request['customer_name'],
                 ];
-                
+
                 $cName = $response->customerName ?? "";
-                
+
                 if (isset($is_beneficiary) && ($is_beneficiary == 1 || $is_beneficiary == true)) {
                     Helpers::addBeneficiary('electricity', json_encode($savedData), $cName, $request['billersCode'], $response->content->transactions->product_name);
                 }
-                
-                
+
+
                 $mailData = ['token' => $token];
                 Mail::to(Auth::user()->email)->send(new TokenMail('emails.token', $mailData, 'Electricity Token'));
                 $reFront = response()->json([
@@ -1684,8 +1687,8 @@ class Utility extends Controller
                 } else {
                     $status = 'failed';
                 }
-                
-                
+
+
 
                 TransactionLog::dispatch(Auth::user()->id,'Electricity',$amount,$requestId,$status,$request['billersCode'],json_encode($data));
                 return $reFront;
@@ -1704,7 +1707,7 @@ class Utility extends Controller
             ]
         ],400);
     }
-    
+
     public function getRecentTransactions($type) {
         $user_id = Auth::user()->id;
         // Validate the type parameter if necessary
@@ -1734,9 +1737,9 @@ class Utility extends Controller
                     'service_name' => $data->service_name ?? null,
                 ];
             });
-            
 
-        
+
+
         return response()->json([
             'status'=>'true',
             'data' => [
@@ -1747,7 +1750,7 @@ class Utility extends Controller
 
         // return response()->json($transactions);
     }
-    
+
     // Educational Logics
     public function waecServices() {
         $arr = $this->waecServices;
@@ -1760,7 +1763,7 @@ class Utility extends Controller
             ]
         ],200);
     }
-    
+
     public function educationVariation($e) {
         if(is_null($e)){
             return response()->json([
@@ -1772,14 +1775,14 @@ class Utility extends Controller
         }else {
             $vtapi = getSettings('vtpass','apikeyvtpass');
             $vtsecret = getSettings('vtpass','secretkeyvtpass');
-            if ($vtapi == "error" || $vtsecret == "error") {return response()->json(retErrorSetting());} 
+            if ($vtapi == "error" || $vtsecret == "error") {return response()->json(retErrorSetting());}
             $requestParams = Http::withHeaders([
                 'api-key' => $vtapi,
                 'secret-key' => $vtsecret,
             ])->get('https://vtpass.com/api/service-variations?serviceID='.$e);
-            
+
             $response = json_decode($requestParams->body())->content;
-            
+
             if(isset($response->ServiceName)){
                 return response()->json([
                         'status' => 'true',
@@ -1798,7 +1801,7 @@ class Utility extends Controller
                 ],400);
             }
 
-            
+
         }
         return response()->json([
             'status'=>'false',
@@ -1807,7 +1810,7 @@ class Utility extends Controller
             ]
         ],400);
     }
-    
+
     public function purchaseWaec(Request $request) {
         $validatedData = Validator::make($request->all(['transaction_pin','quantity','serviceID','variation_code','phone','amount']), [
             'transaction_pin' => ['required','numeric','digits:4', new TransactionPin],
@@ -1839,21 +1842,21 @@ class Utility extends Controller
                 ]
             ],400);
         }
-        
+
         $user = Auth::user();
         $deviceToken = $user->device_token;
-        
+
         $request = Purify::clean($request->all());
         $now = Carbon::now('Africa/Lagos');
         $requestId = $now->format('YmdHi');
         $requestId = $requestId . Str::random(5);
-        
+
         $conv_fee = AdminSetting::where('name','waec')->first(['data'])->data * $request['quantity'];
         $amount = $request['amount'] * $request['quantity'];
         $amount_w_conv_fee = $amount + $conv_fee;
-        
+
         $currentBalance = $user->balance;
-            
+
         $balanceBefore = $currentBalance;
         $balanceAfter = $currentBalance - $amount_w_conv_fee;
 
@@ -1872,7 +1875,7 @@ class Utility extends Controller
 
         $vtapi = getSettings('vtpass','apikeyvtpass');
         $vtsecret = getSettings('vtpass','secretkeyvtpass');
-            
+
         if ($vtapi == "error" || $vtsecret == "error") {return response()->json(retErrorSetting());}
         $requestParams = Http::withHeaders([
             'api-key' => $vtapi,
@@ -1889,7 +1892,7 @@ class Utility extends Controller
         $response = json_decode($requestParams->body());
         if($response->code != 000){
             $status = 'failed';
-            
+
             // $dedRes = json_decode($wallet->callWalletUpdate($amount_w_conv_fee, 'id', Auth::user()->id, '+'));
             return response()->json([
                 'status' => 'false',
@@ -1898,7 +1901,7 @@ class Utility extends Controller
                     'error'=> $response->response_description
                 ]
             ],400);
-           
+
         }
         if (isset($response->content->transactions->status,$response->content->transactions->type,$response->content->transactions->product_name)) {
             $purchase_code = $response->purchased_code;
@@ -1913,9 +1916,9 @@ class Utility extends Controller
                 'balance_before'    => $balanceBefore,
                 'balance_after'     => $balanceAfter,
             ];
-            
+
             $mailData = ['token' => $response->purchased_code, 'service_name' => $response->content->transactions->product_name,];
-            
+
             Mail::to(Auth::user()->email)->send(new TokenMail('emails.waec', $mailData, $product));
 
             $reFront = response()->json([
@@ -1943,7 +1946,7 @@ class Utility extends Controller
         // $wallet->callWalletUpdate($amount_w_conv_fee, 'id', Auth::user()->id, '+');
         $reFront = response()->json(['status'=>'false','data' => ['message' => "WEAC item Purchase failed"]],400);
         return $reFront;
-        
+
 
         return response()->json([
             'status'=>'false',
@@ -1953,7 +1956,7 @@ class Utility extends Controller
             ]
         ],400);
     }
-    
+
     public function verifyProfile(Request $request) {
         $validatedData = Validator::make($request->all(['variation_code','billersCode']), [
             'variation_code' => ['required'],
@@ -1976,14 +1979,14 @@ class Utility extends Controller
         }
 
         $request = Purify::clean($request->all());
-        
+
             $vtapi = getSettings('vtpass','apikeyvtpass');
             $vtsecret = getSettings('vtpass','secretkeyvtpass');
-            
+
             if ($vtapi == "error" || $vtsecret == "error") {
                 return response()->json(retErrorSetting());
             }
-            
+
             try {
                 // Make the API request
                 $requestParams = Http::withHeaders([
@@ -1995,11 +1998,11 @@ class Utility extends Controller
                     'billersCode' => $request['billersCode'],
                     'type' => $request['variation_code'],
                 ]);
-            
+
                 $response = json_decode($requestParams->body());
-                
+
                 // dd($response);
-            
+
                 // Check if the response code is success and no errors
                 if ($response->code == '000' && !isset($response->content->error)) {
                     return response()->json([
@@ -2010,7 +2013,7 @@ class Utility extends Controller
                         ]
                     ], 200);
                 }
-            
+
                 // If the response contains an error
                 return response()->json([
                     'status' => 'false',
@@ -2019,7 +2022,7 @@ class Utility extends Controller
                         'error' => $response->content->error
                     ]
                 ], 400);
-            
+
             } catch (\Illuminate\Http\Client\ConnectionException $e) {
                 // Handle connection issues like timeouts
                 return response()->json([
@@ -2029,7 +2032,7 @@ class Utility extends Controller
                         'error' => $e->getMessage()
                     ]
                 ], 500);
-            
+
             } catch (\Exception $e) {
                 // Catch any other exceptions that occur
                 return response()->json([
@@ -2041,7 +2044,7 @@ class Utility extends Controller
                 ], 500);
             }
 
-       
+
 
         return response()->json([
             'status'=>'false',
@@ -2051,7 +2054,7 @@ class Utility extends Controller
             ]
         ],400);
     }
-    
+
     public function purchaseJamb(Request $request) {
         $validatedData = Validator::make($request->all(['transaction_pin','billersCode','serviceID','variation_code','phone','amount']), [
             'transaction_pin' => ['required','numeric','digits:4', new TransactionPin],
@@ -2084,21 +2087,21 @@ class Utility extends Controller
                 ]
             ],400);
         }
-        
+
         $user = Auth::user();
         $deviceToken = $user->device_token;
-        
+
         $request = Purify::clean($request->all());
         $now = Carbon::now('Africa/Lagos');
         $requestId = $now->format('YmdHi');
         $requestId = $requestId . Str::random(5);
-        
+
         $conv_fee = AdminSetting::where('name','jamb')->first(['data'])->data ;
         $amount = $request['amount'] ;
         $amount_w_conv_fee = $amount + $conv_fee;
-        
+
         $currentBalance = $user->balance;
-            
+
         $balanceBefore = $currentBalance;
         $balanceAfter = $currentBalance - $amount_w_conv_fee;
 
@@ -2117,7 +2120,7 @@ class Utility extends Controller
 
         $vtapi = getSettings('vtpass','apikeyvtpass');
         $vtsecret = getSettings('vtpass','secretkeyvtpass');
-            
+
         if ($vtapi == "error" || $vtsecret == "error") {return response()->json(retErrorSetting());}
         $requestParams = Http::withHeaders([
             'api-key' => $vtapi,
@@ -2147,7 +2150,7 @@ class Utility extends Controller
                     'error'=> $response->response_description
                 ]
             ],400);
-           
+
         }
         if (isset($response->content->transactions->status,$response->content->transactions->type,$response->content->transactions->product_name)) {
             $purchase_code = $response->purchased_code;
@@ -2162,9 +2165,9 @@ class Utility extends Controller
                 'balance_before'    => $balanceBefore,
                 'balance_after'     => $balanceAfter,
             ];
-            
+
             $mailData = ['token' => $response->purchased_code, 'service_name' => $response->content->transactions->product_name,];
-            
+
             Mail::to(Auth::user()->email)->send(new TokenMail('emails.waec', $mailData, $product));
 
             $reFront = response()->json([
@@ -2192,7 +2195,7 @@ class Utility extends Controller
         // $wallet->callWalletUpdate($amount_w_conv_fee, 'id', Auth::user()->id, '+');
         $reFront = response()->json(['status'=>'false','data' => ['message' => "WEAC item Purchase failed"]],400);
         return $reFront;
-        
+
 
         return response()->json([
             'status'=>'false',
@@ -2201,6 +2204,16 @@ class Utility extends Controller
                 'error' => ['serviceID' => 'Invalid service ID']
             ]
         ],400);
+    }
+
+    public static function outputData($boolean, $message, $data, $statusCode): JsonResponse
+    {
+        return response()->json([
+            'status' => $boolean,
+            'message' => $message,
+            'data' => $data,
+            'status_code' => $statusCode
+        ], $statusCode);
     }
 
 }

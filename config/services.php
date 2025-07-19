@@ -21,6 +21,14 @@ return [
         'scheme' => 'https',
     ],
 
+    'dojah' => [
+        'base_url' => env('DOJAH_BASE_URL', 'https://your-bvn-service-url.com'),
+        'app_id' => env('DOJAH_APP_ID'),
+        'secret_key' => env('DOJAH_SEC_KEY'),
+        'public_key' => env('DOJAH_PUB_KEY'),
+    ],
+
+
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],

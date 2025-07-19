@@ -272,6 +272,18 @@ class NombaController extends Controller
                 'data' => ['message' => 'Validation failed', 'error' => $validatedData->errors()]
             ], 400);
         }
+        
+        $data = $validatedData->validated();
+
+        
+        // if ($data['bank_code'] == '305') {
+        //     return response()->json([
+        //         'status' => false,
+        //         'data' => [
+        //             'message' => 'Transfers to this bank are not allowed at the moment.'
+        //         ]
+        //     ], 422);
+        // }
     
         $getName = Helpers::getAccountDetailsWithNomba($request['bank_code'], $request['account_number']);
         if (!isset($getName['code']) || $getName['code'] != 00) {
@@ -312,7 +324,7 @@ class NombaController extends Controller
             ], 400);
         }
     
-        $reference = $ref ?? $this->generateRef();
+        $reference = $ref ?? 'Trans-Ref-' . Str::upper(Str::random(10)) . '-' . time();
         
         $reason = $request['narration'] ?? 'Transfer from ' . $user->first_name . ' ' . $user->surname;
     
@@ -348,23 +360,53 @@ class NombaController extends Controller
                 $request['account_number'],
                 $amount,
                 $reason,
-                $accountName
+                $accountName, $reference
             );
     
-            if (!isset($response['code']) || $response['code'] != 00) {
-                $this->processRefund($user->id, $totalAmount);
+            // if (!isset($response['code']) || $response['code'] != 00) {
+            //     $this->processRefund($user->id, $totalAmount);
                 
+            //     $user->refresh();
+            //     $refreshedBalance = $user->balance;
+                
+            //     $updatedTransactionData = json_encode(array_merge(json_decode($transactionData, true), [
+            //         'status' => 'Failed',
+            //         'balance_before' => $refreshedBalance,
+            //         'balance_after' => $refreshedBalance,
+            //         'message' => $response['description']
+            //     ]));
+    
+            //     // Update log to failed
+            //     TransactionLog::dispatch(
+            //         $user->id,
+            //         "Transfer",
+            //         $amount,
+            //         $reference,
+            //         "Failed",
+            //         $request['account_number'],
+            //         $updatedTransactionData 
+            //     );
+    
+            //     return response()->json([
+            //         'status' => false,
+            //         'data' => ['message' => $response['description'] ?? 'Transaction failed']
+            //     ], 400);
+            // }
+            
+            if (!isset($response['code']) || !in_array($response['code'], [00, 202])) {
+                // Only refund if not success or processing
+                $this->processRefund($user->id, $totalAmount);
+            
                 $user->refresh();
                 $refreshedBalance = $user->balance;
-                
+            
                 $updatedTransactionData = json_encode(array_merge(json_decode($transactionData, true), [
                     'status' => 'Failed',
                     'balance_before' => $refreshedBalance,
                     'balance_after' => $refreshedBalance,
-                    'message' => $response['description']
+                    'message' => $response['description'] ?? 'Transaction failed'
                 ]));
-    
-                // Update log to failed
+            
                 TransactionLog::dispatch(
                     $user->id,
                     "Transfer",
@@ -374,12 +416,40 @@ class NombaController extends Controller
                     $request['account_number'],
                     $updatedTransactionData 
                 );
-    
+            
                 return response()->json([
                     'status' => false,
                     'data' => ['message' => $response['description'] ?? 'Transaction failed']
                 ], 400);
             }
+            
+            // Handle 202 (Processing)
+            if ($response['code'] == 202) {
+                $updatedTransactionData = json_encode(array_merge(json_decode($transactionData, true), [
+                    'status' => 'Processing',
+                    'transaction_id' => $response['data']['id'] ?? null,
+                    'message' => $response['description'] ?? 'Processing'
+                ]));
+            
+                TransactionLog::dispatch(
+                    $user->id,
+                    "Transfer",
+                    $amount,
+                    $reference,
+                    "Processing",
+                    $request['account_number'],
+                    $updatedTransactionData
+                );
+            
+                return response()->json([
+                    "status" => true,
+                    "data" => [
+                        "message" => "Transfer is processing",
+                        "transaction_id" => $reference
+                    ]
+                ], 202);
+            }
+
     
             $responseData = $response['data'];
     

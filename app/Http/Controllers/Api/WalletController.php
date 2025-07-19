@@ -331,6 +331,65 @@
                 }
                 return ['Error', 401];
             }
+            
+            if ($eventType == 'payout_success') {
+                $merchantRef = $data['transaction']['merchantTxRef'];
+                $transactionId = $data['transaction']['transactionId'];
+                $amount = $data['transaction']['transactionAmount'];
+                $narration = $data['transaction']['narration'];
+                $approvedAt = $data['transaction']['time'];
+                $fee = $data['transaction']['fee'];
+                $recipientName = $data['customer']['recipientName'];
+                $accountNumber = $data['customer']['accountNumber'];
+                $bankName = $data['customer']['bankName'];
+            
+                // Find the transaction log
+                $log = ModelTrnLog::where('transaction_id', $merchantRef)->first();
+                
+            
+                if (!$log) {
+                    Log::warning('Payout webhook received, but transaction not found', ['merchantTxRef' => $merchantRef]);
+                    return response()->json(['message' => 'Transaction not found'], 404);
+                }
+            
+                $logData = json_decode($log->data, true);
+
+                $updatedTransactionData = json_encode(array_merge($logData, [
+                    'status' => 'Success',
+                    'transaction_id' => $transactionId,
+                    'approved_at' => $approvedAt,
+                    'message' => $narration,
+                ]));
+
+            
+                TransactionLog::dispatch(
+                    $log->user_id,
+                    "Transfer",
+                    $amount,
+                    $merchantRef,
+                    "Success",
+                    $log->recipient,
+                    $updatedTransactionData 
+                );
+            
+                
+                if ($log->user_id && $log->user) {
+                    PushNotification::dispatch($log->user_id, "Transfer Successful", $narration, null, null, ['transaction_id' => $transactionId]);
+            
+                    $log->user->notify(new \App\Notifications\TransactionNotification(
+                        "Transfer Successful",
+                        "$amount transferred to $recipientName ($accountNumber - $bankName)",
+                        null,
+                        null,
+                        ['transaction_id' => $transactionId]
+                    ));
+                }
+                
+                Log::info('payout completed', ['data' => $data]);
+            
+                return response()->json(['message' => 'Payout processed'], 200);
+            }
+
         }
 
         public function paypointTfUDet(Request $request, User $user) {
@@ -564,7 +623,7 @@
             }
             
             // Fetch user balance
-            if($user->id != 122){
+            if($user->id != 122 || $user->id != 151){
                 $balance = $user->balance;
                 
                 $debitTypeArray = [
@@ -599,7 +658,7 @@
                 $newTransaction = $amount + $allDebitTransactions; //dd($sumOfDeposits);
                 
                 // Restrict accounts based on conditions
-                if (!in_array($user->id, [1, 2, 3])) { // Exclude specific user IDs
+                if (!in_array($user->id, [1, 2, 3, 122, 151,147])) { // Exclude specific user IDs
                     if ($mode !== "+") {
                         if (
                             ($firstTransaction && !in_array($firstTransaction->type, $creditTypeArray)) ||

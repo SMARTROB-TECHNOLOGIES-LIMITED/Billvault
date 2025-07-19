@@ -61,26 +61,26 @@ class AuthController extends Controller
             return response()->json(['status'=>'false','data' => ['message' => 'Invalid Credentials']],401);
         }
 
-
+        
         if ($request->user()) {
             if (Auth::user()->view == 1) {
                 $user = $request->user();
                 $tokenResult = $user->createToken('access_token')->plainTextToken;
-
+                
                 $ip_address = $request->ip();
-
+                
                 $location = Location::get($ip_address);
-
+                
                 // dd($location);
-
+                
                 if ($location) {
-
+                
                    $lat = $location->latitude;
                    $lng = $location->longitude;
                    $country = $location->countryName;
                    $region = $location->regionName;
                    $city = $location->cityName;
-
+                    
                     LoginActivity::create([
                         'user_id' => Auth::id(),
                         'logged_in_at' => now(),
@@ -92,7 +92,7 @@ class AuthController extends Controller
                         'region_name' =>  $region
                     ]);
                 }
-
+    
                 return response()->json([
                     'status'=>'true',
                     'data' => [
@@ -113,7 +113,7 @@ class AuthController extends Controller
         if (strlen($g) != 4) {$this->generateOTP();}
         return $g;
     }
-
+    
     public function emailConfirm(Request $request, User $user) {
         $pure = Purify::clean($request->all(['email']));
         $us = User::where('email',$pure['email'])->where('complete',null)->where('email_verified_at',null);
@@ -140,7 +140,7 @@ class AuthController extends Controller
 
         $token = $this->generateOTP();
         $request = $pure;
-
+        
         $userData = [
             'email' => $request['email'],
             'email_token' => serialize(['token'=>$token,'expire_at'=>now()->addMinutes(10)])
@@ -157,8 +157,8 @@ class AuthController extends Controller
             //     ]
             // ],200);
 
-            // if (Mail::to($request['email'])->send(new RegisterMail('emails.register', $data, 'Paypoint Africa Email Address Confirmation'))) {
-
+            // if (Mail::to($request['email'])->send(new RegisterMail('emails.register', $data, 'Paypoint Africa Email Address Confirmation'))) {    
+                
             // }
 
             $user->where('email',$request['email'])->delete();
@@ -203,7 +203,7 @@ class AuthController extends Controller
         //     return response()->json(['status'=>'false','data' => ['message' => "Verification token not set"]],400);
 
         // }
-
+        
         // $token = $tokenRaw['token'];
         // $expire_at = strtotime($tokenRaw['expire_at']);
         // if ($token != $request->token) {
@@ -214,7 +214,7 @@ class AuthController extends Controller
 
         // }
 
-
+        
 
         $userdata->email_verified_at = now();
         $userdata->email_token = null;
@@ -227,7 +227,7 @@ class AuthController extends Controller
                 'access_token' => $tokenResult,
                 'token_type' => 'Bearer'
             ]],200);
-
+            
         }
 
         return response()->json(['status'=>'false','data' => ['message' => "An error occurred"]],400);
@@ -293,9 +293,9 @@ class AuthController extends Controller
                 ]
             ],400);
         }
-
+    
         $user = Auth::user();
-
+    
         if ($user->update(['password' => Hash::make($request->password)])) {
             return response()->json([
                 'status'=> 'true',
@@ -325,7 +325,7 @@ class AuthController extends Controller
             'data'=> ['message'=> 'Logout successful']
         ],200);
     }
-
+    
     public function isRestricted(){
         $user = Auth::user();
         if (!$user) {
@@ -335,7 +335,7 @@ class AuthController extends Controller
             ]
             ], 404);
         }
-
+        
         return response()->json([
             'status'=> 'true',
             'data' => [
@@ -343,9 +343,9 @@ class AuthController extends Controller
                 'is_account_restricted' => $user->is_account_restricted
             ]
         ],200);
-
+        
     }
-
+    
     public function isBan(){
         $user = Auth::user();
         if (!$user) {
@@ -355,7 +355,7 @@ class AuthController extends Controller
             ]
             ], 404);
         }
-
+        
         return response()->json([
             'status'=> 'true',
             'data' => [
@@ -363,9 +363,9 @@ class AuthController extends Controller
                 'is_ban' => $user->is_ban
             ]
         ],200);
-
+        
     }
-
+    
     public function getUserDetails(Request $request)
     {
         // Validate the input
@@ -386,13 +386,13 @@ class AuthController extends Controller
                 ]
             ],400);
         }
-
+    
 
         // Fetch the user details
         $user = User::where('email', $request->email)
                     ->where('phone_number', $request->phone_number)
                     ->first();
-
+                    
         // dd($user);
 
         // Check if user exists

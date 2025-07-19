@@ -1,20 +1,21 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\FlightBookingController;
+use App\Http\Controllers\Api\NombaController;
 use App\Http\Controllers\Api\PaystackController;
 use App\Http\Controllers\Api\ProfileController;
-use App\Http\Controllers\Api\Utility;
-use App\Http\Controllers\Api\SafeHaven;
-use App\Http\Controllers\Api\NombaController;
 use App\Http\Controllers\Api\ReloadlyGiftCard;
+use App\Http\Controllers\Api\SafeHaven;
+use App\Http\Controllers\Api\Utility;
+use App\Http\Controllers\Api\VtpassController;
 use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\DojahVerificationController;
 use App\Http\Controllers\MiscellaneousController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\WebhookController;
-use App\Http\Controllers\Api\FlightBookingController;
-use App\Http\Controllers\Api\VtpassController;
+
 
 
 
